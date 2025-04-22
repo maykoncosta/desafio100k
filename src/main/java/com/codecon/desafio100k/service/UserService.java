@@ -1,6 +1,5 @@
 package com.codecon.desafio100k.service;
 
-import com.codecon.desafio100k.model.ResponseTopCountries;
 import com.codecon.desafio100k.model.User;
 import com.codecon.desafio100k.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -9,9 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -38,8 +36,8 @@ public class UserService {
                 .toList();
     }
 
-    public Map<String, ResponseTopCountries> getTopCountries() {
-        HashMap<String, ResponseTopCountries> result = new HashMap<>();
+    public Map<String, Integer> getTopCountries() {
+        HashMap<String, Integer> result = new HashMap<>();
         getAllUsers()
                 .stream()
                 .filter(this::isSuperUser)
@@ -47,20 +45,21 @@ public class UserService {
                     var pais = user.getPais();
                     if (result.containsKey(pais)) {
                         var response = result.get(pais);
-                        response.getUsers().add(user);
-                        response.setTotalUsers(response.getTotalUsers() + 1);
+                        result.put(pais, ++response);
                     } else {
-                        var newResponse = new ResponseTopCountries(1, new ArrayList<>());
-                        newResponse.getUsers().add(user);
-                        result.put(pais, newResponse);
+                        result.put(pais, 1);
                     }
                 });
 
-        result.entrySet().stream()
-                .sorted((e1, e2) -> Integer.compare(e2.getValue().getTotalUsers(), e1.getValue().getTotalUsers()))
+        return result.entrySet().stream()
+                .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue()))
                 .limit(5)
-                .forEachOrdered(entry -> result.put(entry.getKey(), entry.getValue()));
-        return result;
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
     }
 
     public void setUsers(List<User> newUsers) {
