@@ -69,4 +69,18 @@ public class UserController {
                 ));
     }
 
+    @GetMapping("/team-insights")
+    public ResponseEntity<Map<String, Object>> getTeamInsights() {
+        long start = System.nanoTime();
+        log.info("Fetching team insights");
+        var teamInsights = userService.getTeamInsights();
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        log.info("Elapsed time: {} ms", elapsedMs);
+        return ResponseEntity.ok(Map.of(
+                "data", teamInsights,
+                "timestamp", Instant.now(),
+                "status", "success",
+                "elapsedTime", elapsedMs
+                ));
+    }
 }

@@ -1,5 +1,6 @@
 package com.codecon.desafio100k.service;
 
+import com.codecon.desafio100k.model.ResponseTeamInsights;
 import com.codecon.desafio100k.model.User;
 import com.codecon.desafio100k.repository.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,7 +24,8 @@ public class UserService {
     }
 
     public void processarFile(MultipartFile file) throws IOException {
-        List<User> users = objectMapper.readValue(file.getInputStream(), new TypeReference<>() {});
+        List<User> users = objectMapper.readValue(file.getInputStream(), new TypeReference<>() {
+        });
         if (users.isEmpty()) {
             throw new IllegalArgumentException("O arquivo não contém usuários válidos.");
         }
@@ -60,6 +62,72 @@ public class UserService {
                         (e1, e2) -> e1,
                         LinkedHashMap::new
                 ));
+    }
+
+    public Map<String, ResponseTeamInsights> getTeamInsights() {
+        Map<String, ResponseTeamInsights> result = new HashMap<>();
+        getAllUsers()
+                .stream()
+                .forEach(user -> {
+                    var equipe = user.getEquipe();
+                    if (result.containsKey(equipe.getNome())) {
+                        var response = result.get(equipe.getNome());
+                        response.setTotalMembros(response.getTotalMembros() + 1);
+                        if (equipe.isLider()) {
+                            if (response.getLideres() != null) {
+                                response.getLideres().add(user.getNome());
+                            } else {
+                                response.setLideres(new ArrayList<>());
+                                response.getLideres().add(user.getNome());
+                            }
+                        }
+                        if (user.isAtivo()) {
+                            response.setMembrosAtivos(response.getMembrosAtivos() + 1);
+                        }
+                        var projetos = equipe.getProjetos();
+                        if (projetos != null) {
+                            projetos.forEach(projeto -> {
+                                if (projeto.concluido()) {
+                                    if (response.getProjetosConcluidos() != null) {
+                                        response.getProjetosConcluidos().add(projeto.nome());
+                                    } else {
+                                        response.setProjetosConcluidos(new ArrayList<>());
+                                        response.getProjetosConcluidos().add(projeto.nome());
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        var response = new ResponseTeamInsights();
+                        response.setTotalMembros(1);
+                        if (user.isAtivo()) {
+                            response.setMembrosAtivos(1);
+                        }
+                        response.setLideres(new ArrayList<>());
+                        response.getLideres().add(user.getNome());
+                        var projetos = equipe.getProjetos();
+                        if (projetos != null) {
+                            projetos.forEach(projeto -> {
+                                if (projeto.concluido()) {
+                                    if (response.getProjetosConcluidos() != null) {
+                                        response.getProjetosConcluidos().add(projeto.nome());
+                                    } else {
+                                        response.setProjetosConcluidos(new ArrayList<>());
+                                        response.getProjetosConcluidos().add(projeto.nome());
+                                    }
+                                }
+                            });
+                        }
+                        result.put(equipe.getNome(), response);
+                    }
+                });
+
+        result.entrySet().stream().forEach(entry -> {
+            var response = entry.getValue();
+            response.setMembrosAtivos((response.getMembrosAtivos() * 100) / response.getTotalMembros());
+            response.setMembrosAtivos(Math.round(response.getMembrosAtivos() * 100.0) / 100.0);
+        });
+        return result;
     }
 
     public void setUsers(List<User> newUsers) {
