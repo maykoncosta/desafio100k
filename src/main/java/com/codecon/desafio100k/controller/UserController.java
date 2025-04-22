@@ -53,4 +53,20 @@ public class UserController {
                 ));
     }
 
+    @GetMapping("/top-countries")
+    public ResponseEntity<Map<String, Object>> getTopCountries() {
+        long start = System.nanoTime();
+        log.info("Fetching top countries");
+        var topCountries = userService.getTopCountries();
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        log.info("Elapsed time: {} ms", elapsedMs);
+        return ResponseEntity.ok(Map.of(
+                "data", topCountries,
+                "total", topCountries.size(),
+                "timestamp", Instant.now(),
+                "status", "success",
+                "elapsedTime", elapsedMs
+                ));
+    }
+
 }
