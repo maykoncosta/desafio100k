@@ -83,4 +83,18 @@ public class UserController {
                 "elapsedTime", elapsedMs
                 ));
     }
+
+    @GetMapping("/active-users-per-day")
+    public ResponseEntity<Map<String, Object>> getActiveUsersPerDay(@RequestParam(required = false) Long min) {
+        long start = System.nanoTime();
+        log.info("Fetching active users per day");
+        var activeUsersPerDay = userService.getActiversUsersPerDay(min);
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        log.info("Elapsed time: {} ms", elapsedMs);
+        return ResponseEntity.ok(Map.of(
+                "data", activeUsersPerDay,
+                "timestamp", Instant.now(),
+                "elapsedTime", elapsedMs
+                ));
+    }
 }

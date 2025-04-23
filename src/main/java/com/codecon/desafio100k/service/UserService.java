@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -122,12 +123,38 @@ public class UserService {
                     }
                 });
 
-        result.entrySet().stream().forEach(entry -> {
+        result.entrySet().forEach(entry -> {
             var response = entry.getValue();
             response.setMembrosAtivos((response.getMembrosAtivos() * 100) / response.getTotalMembros());
             response.setMembrosAtivos(Math.round(response.getMembrosAtivos() * 100.0) / 100.0);
         });
         return result;
+    }
+
+    public Map<LocalDate, Integer> getActiversUsersPerDay(Long min) {
+        Map<LocalDate, Integer> result = new HashMap<>();
+        getAllUsers()
+                .stream()
+                .filter(User::isAtivo)
+                .forEach(user ->
+                        user.getLogs().forEach(log -> {
+                            var data = log.data();
+                            if (result.containsKey(data)) {
+                                var response = result.get(data);
+                                result.put(data, ++response);
+                            } else {
+                                result.put(data, 1);
+                            }
+                        })
+                );
+
+        Long minOcorrencias = min == null ? 0 : min;
+        return result.entrySet().stream()
+                .filter(entry -> entry.getValue() >= minOcorrencias)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue
+                ));
     }
 
     public void setUsers(List<User> newUsers) {

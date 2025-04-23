@@ -2,6 +2,7 @@ package com.codecon.desafio100k.model;
 
 import lombok.Data;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -13,4 +14,5 @@ public class User {
     private boolean ativo;
     private String pais;
     private Equipe equipe;
+    private List<Logs> logs;
 }
